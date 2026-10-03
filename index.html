@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>يمن تواصل - الدردشة الفورية</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #1c1917;
+            color: #f5f5f4;
+        }
+        .yemeni-glow {
+            box-shadow: 0 0 25px rgba(185, 28, 28, 0.2);
+        }
+        .yemeni-input:focus {
+            border-color: #d97706;
+            box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+        }
+    </style>
+</head>
+<body class="h-[100dvh] w-screen flex items-center justify-center overflow-hidden font-sans bg-stone-950 md:bg-stone-900">
+
+    <div id="app-container" class="w-full h-[100dvh] md:max-w-md md:h-[90vh] md:rounded-2xl bg-stone-900 border-0 md:border border-stone-800 flex flex-col shadow-2xl yemeni-glow overflow-hidden relative">
+
+        <!-- 1. شاشة تسجيل الدخول / إنشاء حساب / الاسترجاع -->
+        <div id="auth-screen" class="absolute inset-0 bg-stone-950 z-50 flex flex-col items-center justify-center p-6 overflow-y-auto">
+            <div class="w-16 h-16 bg-gradient-to-tr from-red-800 to-amber-600 rounded-2xl flex items-center justify-center text-3xl text-white mb-3 shadow-lg shadow-red-900/40 border border-amber-600/30 flex-shrink-0">
+                <i class="fa-solid fa-landmark-dome"></i>
+            </div>
+            <h1 class="text-2xl font-black text-amber-500 tracking-wider mb-1">يمن تواصل</h1>
+            <p class="text-[11px] text-stone-400 mb-4" id="auth-subtitle">تطبيق دردشة يمني فوري بتصميم أصيل</p>
+
+            <div id="auth-error" class="hidden w-full bg-red-950/40 border border-red-800/50 text-red-300 p-3 rounded-xl mb-4 text-xs text-center"></div>
+
+            <div id="login-form" class="w-full space-y-3">
+                <div>
+                    <label class="text-xs text-stone-400 block mb-1">اسم المستخدم (8 أحرف على الأقل)</label>
+                    <input type="text" id="login-username" placeholder="اسم المستخدم..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-4 py-3 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div>
+                    <label class="text-xs text-stone-400 block mb-1">كلمة مرور الاستخدام</label>
+                    <input type="password" id="login-password" placeholder="كلمة المرور..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-4 py-3 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="handleLogin()" class="flex-1 bg-gradient-to-r from-red-800 to-amber-700 hover:from-red-700 hover:to-amber-600 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm">دخول</button>
+                    <button onclick="switchAuthMode('register')" class="flex-1 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold py-3 rounded-xl transition text-sm border border-stone-700">حساب جديد</button>
+                </div>
+                <div class="text-center pt-2">
+                    <button onclick="switchAuthMode('recover')" class="text-xs text-amber-500 hover:underline">نسيت كلمة المرور؟ (استرجاع الحساب)</button>
+                </div>
+            </div>
+
+            <div id="register-form" class="w-full space-y-3 hidden">
+                <div>
+                    <label class="text-xs text-stone-400 block mb-1">اسم المستخدم (8 أحرف على الأقل)</label>
+                    <input type="text" id="reg-username" placeholder="اختر اسم مستخدم..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div>
+                    <label class="text-xs text-stone-400 block mb-1">كلمة مرور للاستخدام (8 خانات على الأقل)</label>
+                    <input type="password" id="reg-password" placeholder="كلمة مرور التطبيق..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div>
+                    <label class="text-xs text-amber-400 block mb-1">كلمة مرور الاسترجاع (تستخدم لمرة واحدة فقط طوارئ)</label>
+                    <input type="password" id="reg-recovery" placeholder="كلمة استرجاع الحساب..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="handleRegister()" class="flex-1 bg-gradient-to-r from-red-800 to-amber-700 text-white font-bold py-3 rounded-xl text-sm">إنشاء</button>
+                    <button onclick="switchAuthMode('login')" class="flex-1 bg-stone-800 text-stone-300 font-bold py-3 rounded-xl text-sm">رجوع</button>
+                </div>
+            </div>
+
+            <div id="recover-form" class="w-full space-y-3 hidden">
+                <div>
+                    <label class="text-xs text-stone-400 block mb-1">اسم المستخدم</label>
+                    <input type="text" id="rec-username" placeholder="اسم المستخدم الخاص بك..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div>
+                    <label class="text-xs text-amber-400 block mb-1">كلمة مرور الاسترجاع (الخاصة بك)</label>
+                    <input type="password" id="rec-code" placeholder="كلمة الاسترجاع..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div>
+                    <label class="text-xs text-stone-400 block mb-1">كلمة المرور الجديدة للاستخدام</label>
+                    <input type="password" id="rec-new-password" placeholder="كلمة مرور جديدة..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2.5 text-sm text-stone-200 focus:outline-none yemeni-input">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="handleRecover()" class="flex-1 bg-amber-600 text-stone-950 font-bold py-3 rounded-xl text-sm">استرجاع وتحديث</button>
+                    <button onclick="switchAuthMode('login')" class="flex-1 bg-stone-800 text-stone-300 font-bold py-3 rounded-xl text-sm">إلغاء</button>
+                </div>
+            </div>
+
+            <div class="mt-4 text-[11px] text-stone-500 flex-shrink-0">
+                تصميم وتطوير: <span class="text-amber-500 font-bold">مصطفى طاهر</span>
+            </div>
+        </div>
+
+        <!-- 2. الشاشة الرئيسية -->
+        <div id="chats-screen" class="flex-1 flex flex-col h-full hidden">
+            <div class="bg-stone-950/90 backdrop-blur-md p-4 border-b border-stone-800 flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-tr from-red-800 to-amber-600 rounded-xl flex items-center justify-center font-bold text-white shadow-md border border-amber-600/30" id="user-avatar-disp">ي</div>
+                    <div>
+                        <h2 class="font-bold text-stone-100 text-sm flex items-center gap-1.5" id="username-disp">
+                            اسم المستخدم
+                        </h2>
+                        <span class="text-[10px] text-amber-500 flex items-center gap-1"><i class="fa-solid fa-circle text-[6px]"></i> متصل</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openAddFriendModal()" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/30 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                        <i class="fa-solid fa-user-plus"></i> إضافة صديق
+                    </button>
+                    <button onclick="handleLogout()" class="text-stone-400 hover:text-red-400 p-2 transition" title="خروج">
+                        <i class="fa-solid fa-power-off text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="conversations-list" class="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
+                <div class="text-center text-stone-500 text-xs mt-16">
+                    <i class="fa-solid fa-comments text-3xl mb-2 text-stone-600 block"></i>
+                    لا توجد محادثات حالياً. اضغط على "إضافة صديق" لبدء التواصل!
+                </div>
+            </div>
+
+            <div class="p-2 text-center text-[10px] text-stone-600 border-t border-stone-800 flex-shrink-0">
+                تطوير: مصطفى طاهر
+            </div>
+        </div>
+
+        <!-- 3. نافذة الدردشة -->
+        <div id="chat-room-screen" class="absolute inset-0 bg-stone-900 z-40 flex flex-col hidden">
+            <div class="bg-stone-950/90 backdrop-blur-md p-4 border-b border-stone-800 flex items-center gap-3 flex-shrink-0">
+                <button onclick="closeChatRoom()" class="text-stone-400 hover:text-stone-200 p-1 text-lg">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <div class="w-10 h-10 bg-red-900/30 text-amber-500 border border-amber-600/30 rounded-xl flex items-center justify-center font-bold" id="active-room-avatar">ص</div>
+                <div>
+                    <h3 class="font-bold text-stone-200 text-sm flex items-center gap-1.5" id="active-room-name">اسم الصديق</h3>
+                    <span class="text-[10px] text-amber-500">نشط الآن</span>
+                </div>
+            </div>
+
+            <div id="messages-box" class="flex-1 min-h-0 p-4 overflow-y-auto space-y-3 bg-stone-950/50"></div>
+
+            <!-- حقل الكتابة وإرسال الصور والفيديوهات -->
+            <div class="p-3 bg-stone-950 border-t border-stone-800 flex items-center gap-2 flex-shrink-0">
+                <input type="file" id="file-input" accept="image/*,video/*" class="hidden" onchange="handleFileSelected(event)">
+                <button onclick="document.getElementById('file-input').click()" class="text-stone-400 hover:text-amber-500 p-2 transition text-base flex-shrink-0" title="إرسال صورة أو فيديو">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+                <input type="text" id="msg-input" placeholder="اكتب رسالة..." class="flex-1 bg-stone-900 border border-stone-800 rounded-xl px-4 py-2.5 text-xs text-stone-200 focus:outline-none yemeni-input" onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()" class="bg-gradient-to-r from-red-800 to-amber-700 text-white w-10 h-10 rounded-xl flex items-center justify-center transition shadow-md shadow-red-900/30 flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- نافذة إضافة صديق -->
+        <div id="add-friend-modal" class="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-stone-950 border border-stone-800 w-full max-w-xs rounded-2xl p-5 shadow-2xl">
+                <h3 class="font-bold text-stone-200 text-sm mb-3"><i class="fa-solid fa-user-plus text-amber-500 ml-1"></i> إضافة صديق جديد</h3>
+                <input type="text" id="target-username-input" placeholder="أدخل اسم صديقك..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-4 py-2.5 text-xs text-stone-200 focus:outline-none yemeni-input mb-4">
+                <div class="flex gap-2">
+                    <button onclick="addFriend()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-stone-950 py-2 rounded-xl text-xs font-bold transition">إضافة وحفظ</button>
+                    <button onclick="closeAddFriendModal()" class="flex-1 bg-stone-800 hover:bg-stone-700 text-stone-300 py-2 rounded-xl text-xs font-bold transition">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAY5rq_NV5EBkfZI0F0ayJ6MBjSTdxPmq4",
+            authDomain: "abufaris-app-8e3c6.firebaseapp.com",
+            databaseURL: "https://abufaris-app-8e3c6-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "abufaris-app-8e3c6",
+            storageBucket: "abufaris-app-8e3c6.firebasestorage.app",
+            messagingSenderId: "293162940703",
+            appId: "1:293162940703:web:f367f062347ba707dc582a"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentUser = localStorage.getItem('yemen_chat_user') || null;
+        let currentChatId = null;
+        let messagesRef = null;
+        let friendsRef = null;
+
+        window.onload = function() {
+            if (currentUser) {
+                db.ref('users/' + currentUser).once('value', snapshot => {
+                    if (!snapshot.exists()) {
+                        handleLogout();
+                        return;
+                    }
+                    const data = snapshot.val();
+                    const FIFTEEN_DAYS = 15 * 24 * 60 * 60 * 1000;
+                    
+                    if (!data.verified && data.lastActive && (Date.now() - data.lastActive > FIFTEEN_DAYS)) {
+                        db.ref('users/' + currentUser).remove();
+                        alert('تم حذف حسابك لعدم استخدامه لأكثر من 15 يوماً!');
+                        handleLogout();
+                    } else {
+                        db.ref('users/' + currentUser).update({ lastActive: Date.now() });
+                        showChatsScreen();
+                    }
+                });
+            }
+        };
+
+        function showError(msg) {
+            const err = document.getElementById('auth-error');
+            err.innerText = msg;
+            err.classList.remove('hidden');
+        }
+
+        function switchAuthMode(mode) {
+            document.getElementById('auth-error').classList.add('hidden');
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('recover-form').classList.add('hidden');
+
+            if(mode === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('auth-subtitle').innerText = 'تطبيق دردشة يمني فوري بتصميم أصيل';
+            } else if(mode === 'register') {
+                document.getElementById('register-form').classList.remove('hidden');
+                document.getElementById('auth-subtitle').innerText = 'إنشاء حساب جديد بكلمة مرور استرجاع';
+            } else if(mode === 'recover') {
+                document.getElementById('recover-form').classList.remove('hidden');
+                document.getElementById('auth-subtitle').innerText = 'استرجاع الحساب بكلمة المرور الخاصة (مرة واحدة)';
+            }
+        }
+
+        function handleRegister() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+            const recovery = document.getElementById('reg-recovery').value.trim();
+            
+            if (username.length < 8 || password.length < 8 || recovery.length < 4) {
+                showError('اسم المستخدم وكلمة المرور يجب ألا يقل كل منهما عن 8 خانات!');
+                return;
+            }
+
+            const userRef = db.ref('users/' + username);
+            userRef.once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    showError('اسم المستخدم مستخدم مسبقاً!');
+                } else {
+                    userRef.set({
+                        password: password,
+                        recoveryPassword: recovery,
+                        verified: false,
+                        createdAt: Date.now(),
+                        lastActive: Date.now()
+                    }, (error) => {
+                        if (error) {
+                            showError('فشل إنشاء الحساب');
+                        } else {
+                            currentUser = username;
+                            localStorage.setItem('yemen_chat_user', currentUser);
+                            showChatsScreen();
+                        }
+                    });
+                }
+            });
+        }
+
+        function handleLogin() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            
+            if (username.length < 8 || password.length < 8) {
+                showError('يرجى إدخال بيانات صحيحة (8 خانات على الأقل)!');
+                return;
+            }
+
+            const userRef = db.ref('users/' + username);
+            userRef.once('value', (snapshot) => {
+                if (!snapshot.exists()) {
+                    showError('اسم المستخدم غير موجود أو تم حذفه لعدم النشاط!');
+                } else {
+                    const userData = snapshot.val();
+                    const FIFTEEN_DAYS = 15 * 24 * 60 * 60 * 1000;
+                    
+                    if (!userData.verified && userData.lastActive && (Date.now() - userData.lastActive > FIFTEEN_DAYS)) {
+                        userRef.remove();
+                        showError('تم حذف هذا الحساب لعدم النشاط لأكثر من 15 يوماً!');
+                        return;
+                    }
+
+                    if (userData.password !== password) {
+                        showError('كلمة المرور غير صحيحة!');
+                    } else {
+                        currentUser = username;
+                        localStorage.setItem('yemen_chat_user', currentUser);
+                        userRef.update({ lastActive: Date.now() });
+                        showChatsScreen();
+                    }
+                }
+            });
+        }
+
+        function handleRecover() {
+            const username = document.getElementById('rec-username').value.trim();
+            const code = document.getElementById('rec-code').value.trim();
+            const newPassword = document.getElementById('rec-new-password').value.trim();
+
+            if (!username || !code || newPassword.length < 8) {
+                showError('املأ جميع الحقول وكلمة المرور الجديدة لا تقل عن 8 خانات');
+                return;
+            }
+
+            const userRef = db.ref('users/' + username);
+            userRef.once('value', snapshot => {
+                if(!snapshot.exists()) {
+                    showError('المستخدم غير موجود');
+                    return;
+                }
+                const data = snapshot.val();
+                if(data.recoveryPassword !== code || data.recoveryPassword === 'USED') {
+                    showError('كلمة مرور الاسترجاع خاطئة أو تم استخدامها مسبقاً!');
+                    return;
+                }
+
+                userRef.update({
+                    password: newPassword,
+                    recoveryPassword: 'USED',
+                    lastActive: Date.now()
+                }, error => {
+                    if(error) {
+                        showError('حدث خطأ');
+                    } else {
+                        alert('تم استرجاع الحساب وتحديث كلمة المرور بنجاح! سجّل دخولك الآن.');
+                        switchAuthMode('login');
+                    }
+                });
+            });
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('yemen_chat_user');
+            if (friendsRef) friendsRef.off();
+            currentUser = null;
+            document.getElementById('chats-screen').classList.add('hidden');
+            document.getElementById('chat-room-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            switchAuthMode('login');
+        }
+
+        function showChatsScreen() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('chats-screen').classList.remove('hidden');
+            
+            db.ref('users/' + currentUser).once('value', snap => {
+                const uData = snap.val() || {};
+                const isMeVerified = uData.verified === true;
+                const badgeStr = isMeVerified ? `<span class="bg-amber-500/20 text-amber-400 text-[10px] px-2 py-0.5 rounded-md border border-amber-500/30 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-certificate"></i> مميز</span>` : '';
+                document.getElementById('username-disp').innerHTML = `${currentUser} ${badgeStr}`;
+            });
+
+            document.getElementById('user-avatar-disp').innerText = currentUser.charAt(0).toUpperCase();
+            loadFriends();
+        }
+
+        function addFriend() {
+            const target = document.getElementById('target-username-input').value.trim();
+            if (!target || target === currentUser) {
+                alert('يرجى كتابة اسم مستخدم صحيح وغير مطابق لاسمك');
+                return;
+            }
+
+            const userRef = db.ref('users/' + target);
+            userRef.once('value', (snapshot) => {
+                if (!snapshot.exists()) {
+                    alert('هذا المستخدم غير مسجل أو تم حذفه!');
+                } else {
+                    db.ref('friends/' + currentUser + '/' + target).set({ addedAt: Date.now() });
+                    db.ref('friends/' + target + '/' + currentUser).set({ addedAt: Date.now() });
+                    closeAddFriendModal();
+                    alert('تم إضافة الصديق بنجاح وسيظهر لديه مباشرة!');
+                }
+            });
+        }
+
+        function loadFriends() {
+            const listContainer = document.getElementById('conversations-list');
+            if (friendsRef) friendsRef.off();
+
+            friendsRef = db.ref('friends/' + currentUser);
+            friendsRef.on('value', (snapshot) => {
+                listContainer.innerHTML = '';
+                if (!snapshot.exists()) {
+                    listContainer.innerHTML = `
+                        <div class="text-center text-stone-500 text-xs mt-16">
+                            <i class="fa-solid fa-comments text-3xl mb-2 text-stone-600 block"></i>
+                            لا توجد محادثات حالياً. اضغط على "إضافة صديق" لبدء التواصل!
+                        </div>
+                    `;
+                    return;
+                }
+
+                snapshot.forEach((childSnapshot) => {
+                    const friendName = childSnapshot.key;
+                    
+                    db.ref('users/' + friendName).once('value', userSnap => {
+                        const userData = userSnap.val() || {};
+                        const isVerified = userData.verified === true;
+                        const badgeHtml = isVerified ? `<span class="bg-amber-500/20 text-amber-400 text-[9px] px-1.5 py-0.5 rounded-md border border-amber-500/30 mr-1 inline-flex items-center gap-0.5"><i class="fa-solid fa-certificate"></i> مميز</span>` : '';
+
+                        const friendCard = document.createElement('div');
+                        friendCard.className = "bg-stone-800/40 hover:bg-stone-800/80 border border-stone-800/80 p-3 rounded-2xl flex items-center gap-3 cursor-pointer transition mb-2";
+                        friendCard.onclick = () => openChatRoom(friendName);
+                        friendCard.innerHTML = `
+                            <div class="w-12 h-12 bg-amber-600/20 text-amber-500 border border-amber-600/30 rounded-2xl flex items-center justify-center font-bold text-lg">
+                                ${friendName.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="font-bold text-stone-200 text-sm flex items-center">${friendName} ${badgeHtml}</h4>
+                                    <span class="text-[10px] text-amber-500">متصل</span>
+                                </div>
+                                <p class="text-xs text-stone-400">انقر لفتح المحادثة الفورية...</p>
+                            </div>
+                        `;
+                        listContainer.appendChild(friendCard);
+                    });
+                });
+            });
+        }
+
+        function openChatRoom(friendName) {
+            db.ref('users/' + friendName).once('value', snap => {
+                const uData = snap.val() || {};
+                const isVerified = uData.verified === true;
+                const badgeHtml = isVerified ? `<span class="bg-amber-500/20 text-amber-400 text-[9px] px-1.5 py-0.5 rounded-md border border-amber-500/30 mr-1 inline-flex items-center gap-0.5"><i class="fa-solid fa-certificate"></i> مميز</span>` : '';
+                document.getElementById('active-room-name').innerHTML = `${friendName} ${badgeHtml}`;
+            });
+
+            document.getElementById('active-room-avatar').innerText = friendName.charAt(0).toUpperCase();
+            document.getElementById('chat-room-screen').classList.remove('hidden');
+
+            currentChatId = [currentUser, friendName].sort().join('_');
+            
+            if (messagesRef) messagesRef.off();
+
+            const messagesBox = document.getElementById('messages-box');
+            messagesBox.innerHTML = '';
+
+            messagesRef = db.ref('chats/' + currentChatId + '/messages');
+            messagesRef.on('value', (snapshot) => {
+                messagesBox.innerHTML = '';
+                if (!snapshot.exists()) return;
+
+                snapshot.forEach((childSnapshot) => {
+                    const msg = childSnapshot.val();
+                    const isMe = msg.sender === currentUser;
+                    const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    let contentHtml = '';
+                    if (msg.fileUrl) {
+                        if (msg.fileType === 'video') {
+                            contentHtml = `<video src="${msg.fileUrl}" controls class="rounded-xl max-w-full max-h-48 mb-1 bg-black"></video>`;
+                        } else {
+                            contentHtml = `<img src="${msg.fileUrl}" class="rounded-xl max-w-full max-h-48 object-cover mb-1 cursor-pointer" onclick="window.open('${msg.fileUrl}')">`;
+                        }
+                    }
+                    if (msg.text) {
+                        contentHtml += `<div>${msg.text}</div>`;
+                    }
+
+                    messagesBox.innerHTML += `
+                        <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                            <div class="${isMe ? 'bg-gradient-to-r from-red-800 to-amber-700 text-white rounded-tl-none shadow-md shadow-red-900/20' : 'bg-stone-800 text-stone-200 border border-stone-700/50 rounded-tr-none'} p-3 rounded-2xl max-w-[75%] text-xs">
+                                ${contentHtml}
+                                <span class="block text-[9px] ${isMe ? 'text-amber-200' : 'text-stone-400'} text-left mt-1">${timeStr}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                messagesBox.scrollTop = messagesBox.scrollHeight;
+            });
+        }
+
+        function closeChatRoom() {
+            if (messagesRef) messagesRef.off();
+            document.getElementById('chat-room-screen').classList.add('hidden');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if (!text || !currentChatId) return;
+
+            input.value = '';
+
+            db.ref('chats/' + currentChatId + '/messages').push({
+                sender: currentUser,
+                text: text,
+                timestamp: Date.now()
+            });
+            db.ref('users/' + currentUser).update({ lastActive: Date.now() });
+        }
+
+        // دالة معالجة وإرسال الصور والفيديوهات
+        function handleFileSelected(event) {
+            const file = event.target.files[0];
+            if (!file || !currentChatId) return;
+
+            // التحقق من حجم الملف (أقل من 5 ميجابايت لضمان السرعة)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('حجم الملف كبير جداً. يرجى اختيار صورة أو فيديو بحجم أقل من 5 ميجابايت.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const fileDataUrl = e.target.result;
+                const isVideo = file.type.startsWith('video');
+
+                db.ref('chats/' + currentChatId + '/messages').push({
+                    sender: currentUser,
+                    text: '',
+                    fileUrl: fileDataUrl,
+                    fileType: isVideo ? 'video' : 'image',
+                    timestamp: Date.now()
+                });
+                db.ref('users/' + currentUser).update({ lastActive: Date.now() });
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // تصفير الحقل للاختيار المتكرر
+        }
+
+        function openAddFriendModal() {
+            document.getElementById('add-friend-modal').classList.remove('hidden');
+        }
+
+        function closeAddFriendModal() {
+            document.getElementById('add-friend-modal').classList.add('hidden');
+            document.getElementById('target-username-input').value = '';
+        }
+    </script>
+</body>
+</html>
